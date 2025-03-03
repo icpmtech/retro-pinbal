@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Klondike Solitaire</title>
+  <title>Klondike Solitaire | Cantinho de .NET</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
+
   <!-- OPTIONAL: Retro "CRT" overlay for fun; remove if undesired -->
   <style>
     .crt::before {
@@ -29,19 +29,76 @@
   <style>
     /* 
       ──────────────────────────────────────────────────────────
-       SIMPLE RESET
+       BASIC RESET
       ──────────────────────────────────────────────────────────
     */
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* 
+      ──────────────────────────────────────────────────────────
+       RETRO "CANTINHO DE .NET" HEADER
+      ──────────────────────────────────────────────────────────
+    */
+    .header {
+      position: fixed;   /* Keep header pinned to top */
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 30px;
+      background: linear-gradient(to bottom, #C3C7CB, #F0F0F0);
+      border-bottom: 2px solid #888;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 10px;
+      z-index: 9998; /* So it's on top of the game board */
+    }
+    .header .window-title {
+      font-size: 14px;
+      color: #000;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .window-controls {
+      display: flex;
+      gap: 1px;
+    }
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 28px;
+      font-size: 0.75rem;
+      color: #000;
+      background: linear-gradient(to bottom, #E0E0E0, #C3C7CB);
+      border: 1px solid #999;
+      cursor: pointer;
+      user-select: none;
+    }
+    .btn:active {
+      /* Inverted gradient on click (old Windows look) */
+      background: linear-gradient(to top, #E0E0E0, #C3C7CB);
+    }
+
+    /* 
+      ──────────────────────────────────────────────────────────
+       BODY & MAIN LAYOUT
+      ──────────────────────────────────────────────────────────
+      We push content down by 30px so it isn't hidden under the header.
+    */
     body {
       font-family: sans-serif;
       background: #006600; /* green velvet table vibe */
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
       padding: 10px;
+      margin-top: 30px; /* Shift content below the pinned header */
     }
 
     h1 {
@@ -50,14 +107,6 @@
       text-align: center;
     }
 
-    /* 
-      ──────────────────────────────────────────────────────────
-       LAYOUT: 
-         - 4 foundation piles
-         - stock and waste on top-left
-         - 7 tableau piles 
-      ──────────────────────────────────────────────────────────
-    */
     .board {
       display: flex;
       flex-direction: column;
@@ -65,6 +114,7 @@
       max-width: 1200px;
       margin: 0 auto;
     }
+
     .top-row {
       display: flex;
       justify-content: space-between;
@@ -86,21 +136,15 @@
       border: 2px dashed rgba(255,255,255,0.3);
     }
 
-    /* 
-      ──────────────────────────────────────────────────────────
-       TABLEAU (7 columns). Each card is offset so you can see 
-       them in a cascade. 
-      ──────────────────────────────────────────────────────────
-    */
     .tableau-row {
       display: flex;
       gap: 20px;
       justify-content: center;
     }
 
-    /*
+    /* 
       ──────────────────────────────────────────────────────────
-      CARD STYLING
+       CARD STYLING
       ──────────────────────────────────────────────────────────
     */
     .card {
@@ -118,8 +162,6 @@
       box-shadow: 0 0 10px 2px rgba(255,255,0,0.8);
       z-index: 999;
     }
-
-    /* Card face details */
     .card .top, .card .bottom {
       position: absolute;
       color: inherit;
@@ -142,30 +184,16 @@
       color: inherit;
       opacity: 0.6;
     }
-
-    /* Face down card (back) */
     .card.back {
       background: linear-gradient(45deg, #0000aa 0%, #8888ff 100%);
     }
-
-    /* Color suits properly */
     .black { color: black; }
     .red   { color: #c00;  }
 
-    /*
-      ──────────────────────────────────────────────────────────
-      DRAG HANDLERS
-      ──────────────────────────────────────────────────────────
-    */
     .droppable-hover {
       outline: 2px solid yellow;
     }
 
-    /*
-      ──────────────────────────────────────────────────────────
-      MOBILE-FRIENDLY
-      ──────────────────────────────────────────────────────────
-    */
     @media (max-width: 600px) {
       .pile {
         width: 60px;
@@ -185,6 +213,16 @@
   </style>
 </head>
 <body class="crt">
+
+  <!-- Retro .NET / Windows 95 style header -->
+  <div class="header">
+    <div class="window-title">Klondike Solitaire - Cantinho de .NET</div>
+    <div class="window-controls">
+      <div class="btn">_</div>
+      <div class="btn">□</div>
+      <div class="btn">X</div>
+    </div>
+  </div>
 
   <h1>Klondike Solitaire</h1>
 
@@ -216,21 +254,14 @@
   </div>
 
   <script>
-    /* 
-      Simple Klondike Solitaire in one file.
-      - We'll represent cards by JS objects: { rank, suit, faceUp }
-      - Suits: ['♠','♥','♦','♣'] (or we can store 'S','H','D','C')
-      - Ranks: 1 to 13 internally, but we'll label them A,2..10,J,Q,K
-      - We'll keep minimal logic checks:
-          - Foundation must start with Ace, then ascending rank
-          - Tableau piles descend in rank, alternate color
-          - Only King can go to an empty tableau pile
-          - Stock flips onto waste
+    /*
+      Klondike Solitaire + Retro Header
+      - Minimal logic + drag & drop
+      - This code is for demonstration/learning, not production-level
     */
 
-    // Constants
-    const SUITS = ['♠','♥','♦','♣']; 
-    const RANKS = [1,2,3,4,5,6,7,8,9,10,11,12,13]; // 1 = Ace, 11 = J, 12 = Q, 13 = K
+    const SUITS = ['♠','♥','♦','♣'];
+    const RANKS = [1,2,3,4,5,6,7,8,9,10,11,12,13];
     const RANK_TO_STRING = {
       1: 'A', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6',
       7: '7', 8: '8', 9: '9', 10: '10', 11: 'J', 12: 'Q', 13: 'K'
@@ -238,10 +269,9 @@
 
     let stockPile = [];
     let wastePile = [];
-    let foundations = [[],[],[],[]]; 
-    let tableaus = [[],[],[],[],[],[],[]]; // 7 tableau piles
+    let foundations = [[],[],[],[]];
+    let tableaus = [[],[],[],[],[],[],[]];
 
-    // Build and shuffle the deck
     function createDeck() {
       let deck = [];
       for (let suit of SUITS) {
@@ -252,7 +282,6 @@
       return shuffle(deck);
     }
 
-    // Fisher-Yates shuffle
     function shuffle(array) {
       for (let i = array.length - 1; i > 0; i--) {
         let j = Math.floor(Math.random() * (i + 1));
@@ -261,40 +290,31 @@
       return array;
     }
 
-    // Deal the cards into the 7 tableau piles
     function dealCards(deck) {
       for (let i = 0; i < 7; i++) {
         for (let j = 0; j <= i; j++) {
           let card = deck.pop();
-          // Only last card in each pile is face-up
           card.faceUp = (j === i);
           tableaus[i].push(card);
         }
       }
-      // The rest go to stock
       stockPile = deck;
     }
 
     function initGame() {
-      // Reset all piles
       stockPile = [];
       wastePile = [];
       foundations = [[],[],[],[]];
       tableaus = [[],[],[],[],[],[],[]];
-      
-      // Create, shuffle, deal
+
       let deck = createDeck();
       dealCards(deck);
 
-      // Render all piles
       renderAllPiles();
-
-      // Add event: click stock => flip card to waste
       document.getElementById('stock').onclick = flipFromStock;
     }
 
     function renderAllPiles() {
-      // Clear DOM
       clearPileDOM('stock');
       clearPileDOM('waste');
       for (let f = 0; f < 4; f++) {
@@ -304,31 +324,24 @@
         clearPileDOM(`tableau-${t+1}`);
       }
 
-      // Render stock
       stockPile.forEach((card, index) => {
-        // face-down
         renderCard(card, 'stock', index);
       });
-      // Render waste
       wastePile.forEach((card, index) => {
         renderCard(card, 'waste', index);
       });
-      // Render foundations
       foundations.forEach((foundation, fIndex) => {
         foundation.forEach((card, index) => {
           renderCard(card, `foundation-${fIndex+1}`, index);
         });
       });
-      // Render tableau
       tableaus.forEach((pile, tIndex) => {
         pile.forEach((card, index) => {
-          // offset each card downward by 25px from previous
           renderCard(card, `tableau-${tIndex+1}`, index, index * 25);
         });
       });
     }
 
-    // Remove child DOM elements from a given pile
     function clearPileDOM(pileId) {
       const pileEl = document.getElementById(pileId);
       while (pileEl.firstChild) {
@@ -336,7 +349,6 @@
       }
     }
 
-    // Create a card div in the DOM
     function renderCard(card, pileId, zIndex, offsetY=0) {
       const pileEl = document.getElementById(pileId);
       let cardEl = document.createElement('div');
@@ -344,15 +356,12 @@
       cardEl.style.top = offsetY + 'px';
       cardEl.style.zIndex = zIndex;
 
-      // Face-up or face-down
       if (!card.faceUp) {
         cardEl.classList.add('back');
       } else {
-        // Suit color
         let suitColor = (card.suit === '♠' || card.suit === '♣') ? 'black' : 'red';
         cardEl.classList.add(suitColor);
 
-        // Markup
         let topDiv = document.createElement('div');
         topDiv.className = 'top';
         topDiv.textContent = RANK_TO_STRING[card.rank] + card.suit;
@@ -369,13 +378,11 @@
         cardEl.appendChild(centerDiv);
       }
 
-      // For drag&drop, store card references in dataset
       cardEl.dataset.suit = card.suit;
       cardEl.dataset.rank = card.rank;
       cardEl.dataset.faceUp = card.faceUp;
-      cardEl.dataset.pile = pileId; // which pile it's currently on
+      cardEl.dataset.pile = pileId;
 
-      // If face-up, we allow dragging
       if (card.faceUp) {
         makeDraggable(cardEl);
       }
@@ -383,13 +390,8 @@
       pileEl.appendChild(cardEl);
     }
 
-    /* 
-      Add drag & drop event listeners for a face-up card.
-      Also handle "dragstart" so we know which sub-stack is being moved.
-    */
     function makeDraggable(cardEl) {
       cardEl.draggable = true;
-
       cardEl.addEventListener('dragstart', onDragStart);
       cardEl.addEventListener('dragend', onDragEnd);
     }
@@ -398,22 +400,18 @@
       let cardEl = e.target;
       cardEl.classList.add('dragging');
 
-      // Figure out how many cards from this card downward we are dragging
-      // (In the tableau, you can drag a stack of face-up cards)
-      let pileId = cardEl.dataset.pile;
-      if (pileId.startsWith('tableau')) {
-        let tableauIndex = parseInt(pileId.split('-')[1]) - 1;
-        let cardIndexInPile = getCardIndexInTableau(tableauIndex, cardEl);
-        let subStack = tableaus[tableauIndex].slice(cardIndexInPile); 
-        // Store that sub-stack in DataTransfer
+      let fromPileId = cardEl.dataset.pile;
+      if (fromPileId.startsWith('tableau')) {
+        let tIndex = parseInt(fromPileId.split('-')[1]) - 1;
+        let cardIndexInPile = getCardIndexInTableau(tIndex, cardEl);
+        let subStack = tableaus[tIndex].slice(cardIndexInPile);
         e.dataTransfer.setData('application/json', JSON.stringify({
-          from: pileId,
+          from: fromPileId,
           cards: subStack
         }));
       } else {
-        // Foundation or waste => 1 card only
         e.dataTransfer.setData('application/json', JSON.stringify({
-          from: pileId,
+          from: fromPileId,
           cards: [ getCardObject(cardEl) ]
         }));
       }
@@ -424,7 +422,6 @@
       e.target.classList.remove('dragging');
     }
 
-    // We'll mark valid drop targets by adding a 'droppable-hover' class
     document.querySelectorAll('.pile').forEach(pile => {
       pile.addEventListener('dragover', onDragOver);
       pile.addEventListener('dragleave', onDragLeave);
@@ -435,22 +432,18 @@
       e.preventDefault();
       e.currentTarget.classList.add('droppable-hover');
     }
-
     function onDragLeave(e) {
       e.currentTarget.classList.remove('droppable-hover');
     }
-
     function onDrop(e) {
       e.preventDefault();
       e.currentTarget.classList.remove('droppable-hover');
 
-      let pileEl = e.currentTarget; 
-      let dropPileId = pileEl.id; 
+      let dropPileId = e.currentTarget.id;
       let data = JSON.parse(e.dataTransfer.getData('application/json'));
       let fromPileId = data.from;
-      let movingCards = data.cards; // array of card objects
+      let movingCards = data.cards;
 
-      // Check if drop is valid:
       if (dropPileId.startsWith('foundation')) {
         if (canDropOnFoundation(movingCards, dropPileId)) {
           moveCards(fromPileId, dropPileId, movingCards);
@@ -460,46 +453,36 @@
           moveCards(fromPileId, dropPileId, movingCards);
         }
       }
-      // For waste -> waste or foundation -> foundation drop, typically not valid in Klondike.
-      // We'll assume you can't drop onto stock or waste except from flipping stock.
 
       renderAllPiles();
     }
 
-    // Move the card objects from one pile to another
     function moveCards(fromPileId, toPileId, cards) {
-      // Remove from the old array
+      // remove from old array
       if (fromPileId === 'waste') {
-        // remove from wastePile
         wastePile.splice(wastePile.length - cards.length, cards.length);
-      } 
-      else if (fromPileId.startsWith('foundation')) {
+      } else if (fromPileId.startsWith('foundation')) {
         let fIndex = parseInt(fromPileId.split('-')[1]) - 1;
         foundations[fIndex].splice(foundations[fIndex].length - cards.length, cards.length);
-      }
-      else if (fromPileId.startsWith('tableau')) {
+      } else if (fromPileId.startsWith('tableau')) {
         let tIndex = parseInt(fromPileId.split('-')[1]) - 1;
-        // find the sub-stack start
         let startIndex = tableaus[tIndex].length - cards.length;
         tableaus[tIndex].splice(startIndex, cards.length);
-        // if we remove some cards from the tableau, flip the new last card face-up if it exists
         if (tableaus[tIndex].length > 0) {
           tableaus[tIndex][tableaus[tIndex].length - 1].faceUp = true;
         }
       }
 
-      // Add to the new array
+      // add to new pile
       if (toPileId.startsWith('foundation')) {
         let fIndex = parseInt(toPileId.split('-')[1]) - 1;
         foundations[fIndex].push(...cards);
-      }
-      else if (toPileId.startsWith('tableau')) {
+      } else if (toPileId.startsWith('tableau')) {
         let tIndex = parseInt(toPileId.split('-')[1]) - 1;
         tableaus[tIndex].push(...cards);
       }
     }
 
-    // Return the card object for a given cardEl
     function getCardObject(cardEl) {
       return {
         suit: cardEl.dataset.suit,
@@ -508,20 +491,19 @@
       };
     }
 
-    // In the tableau array, find the index of the card that matches cardEl
     function getCardIndexInTableau(tIndex, cardEl) {
       for (let i = 0; i < tableaus[tIndex].length; i++) {
-        let cardObj = tableaus[tIndex][i];
-        if (cardObj.suit === cardEl.dataset.suit && cardObj.rank == cardEl.dataset.rank && cardObj.faceUp == (cardEl.dataset.faceUp === 'true')) {
+        let c = tableaus[tIndex][i];
+        if (c.suit === cardEl.dataset.suit &&
+            c.rank == cardEl.dataset.rank &&
+            c.faceUp == (cardEl.dataset.faceUp === 'true')) {
           return i;
         }
       }
       return -1;
     }
 
-    // Check if we can legally drop the card(s) onto a foundation pile
     function canDropOnFoundation(movingCards, foundationId) {
-      // You can only move 1 card at a time to the foundation
       if (movingCards.length !== 1) return false;
       let card = movingCards[0];
       if (!card.faceUp) return false;
@@ -529,30 +511,26 @@
       let fIndex = parseInt(foundationId.split('-')[1]) - 1;
       let foundationPile = foundations[fIndex];
       if (foundationPile.length === 0) {
-        // Must be an Ace
-        return (card.rank === 1);
+        return (card.rank === 1); // must be Ace
       } else {
-        // Must match suit, and be exactly 1 rank above
         let topCard = foundationPile[foundationPile.length - 1];
         return (card.suit === topCard.suit && card.rank === topCard.rank + 1);
       }
     }
 
-    // Check if we can legally drop the card(s) onto a tableau pile
     function canDropOnTableau(movingCards, tableauId) {
-      let firstCard = movingCards[0]; // top of the sub-stack
+      let firstCard = movingCards[0];
       if (!firstCard.faceUp) return false;
 
       let tIndex = parseInt(tableauId.split('-')[1]) - 1;
       let tableauPile = tableaus[tIndex];
       if (tableauPile.length === 0) {
-        // Only a King can go on empty
-        return (firstCard.rank === 13);
+        return (firstCard.rank === 13); // only King on empty
       } else {
-        // Must be opposite color and 1 rank below the last faceUp card
         let lastCard = tableauPile[tableauPile.length - 1];
-        if (!lastCard.faceUp) return false; // Should not happen in normal play
-        if (isOppositeColor(firstCard.suit, lastCard.suit) && firstCard.rank === lastCard.rank - 1) {
+        if (!lastCard.faceUp) return false;
+        if (isOppositeColor(firstCard.suit, lastCard.suit) &&
+            firstCard.rank === lastCard.rank - 1) {
           return true;
         }
         return false;
@@ -566,18 +544,15 @@
       return (aIsRed !== bIsRed);
     }
 
-    // Click the stock => flip 1 card onto waste
     function flipFromStock() {
-      // If stock is empty, recycle waste into stock
       if (stockPile.length === 0) {
-        // turn over all the waste
+        // recycle waste into stock
         while (wastePile.length > 0) {
           let card = wastePile.pop();
           card.faceUp = false;
           stockPile.push(card);
         }
       } else {
-        // flip top stock card onto waste
         let card = stockPile.pop();
         card.faceUp = true;
         wastePile.push(card);
@@ -585,7 +560,6 @@
       renderAllPiles();
     }
 
-    // Start game
     window.onload = initGame;
   </script>
 </body>
