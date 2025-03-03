@@ -2,10 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Retro Pinball | Classic Arcade Style|cantinhode.net </title>
+  <title>Retro Pinball | Classic Arcade Style</title>
   <!-- Mobile viewport for responsive scaling -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="icon" href="logo.png" type="png">
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
@@ -67,12 +71,15 @@
       border-radius: 50%;
       background-color: #f0f; /* retro magenta */
       color: #fff;
-      text-align: center;
-      line-height: 80px;
       font-size: 1.25rem;
       cursor: pointer;
       outline: none;
       box-shadow: 0 0 10px #f0f;
+
+      /* Use flex to center icon vertically/horizontally */
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .left-trigger {
@@ -108,7 +115,6 @@
       .trigger {
         width: 100px;
         height: 100px;
-        line-height: 100px;
         font-size: 1.5rem;
       }
       .current-score span,
@@ -126,8 +132,14 @@
     <div class="score high-score">
       high score<br><span></span>
     </div>
-    <button class="trigger left-trigger">tap!</button>
-    <button class="trigger right-trigger">tap!</button>
+
+    <!-- Updated triggers with Font Awesome icons -->
+    <button class="trigger left-trigger">
+      <i class="fas fa-arrow-left"></i>
+    </button>
+    <button class="trigger right-trigger">
+      <i class="fas fa-arrow-right"></i>
+    </button>
   </div>
 
   <!-- Audio elements for sound effects -->
