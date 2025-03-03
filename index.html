@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="crt">
 <head>
   <meta charset="UTF-8">
   <title>Retro Pinball | Classic Arcade Style</title>
@@ -7,33 +7,60 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
   <link rel="icon" href="logo.png" type="png">
-
-  <!-- Optional: Font Awesome for icons, if you want icons in the header -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
-    *,
-    *::before,
-    *::after {
+    /* 
+      ──────────────────────────────────────────────────────────
+      RESET + BASE
+      ──────────────────────────────────────────────────────────
+    */
+    * {
       box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
-
     html, body {
       height: 100%;
       overflow: hidden;
-      margin: 0;
-      padding: 0;
       background-color: #000; /* retro black background */
       color: #fff;
       font-family: 'Press Start 2P', monospace;
       text-transform: uppercase;
     }
 
-    /* ──────────────────────────────────────────────────────────
-       Retro .NET / Windows 95-Style Header
-       ────────────────────────────────────────────────────────── */
+    /*
+      ──────────────────────────────────────────────────────────
+      CRT OVERLAY (SCANLINES)
+      ──────────────────────────────────────────────────────────
+      Applies an overlay to the entire window to simulate
+      horizontal scanlines, like a classic arcade monitor.
+    */
+    .crt::before {
+      content: "";
+      pointer-events: none;
+      position: fixed;
+      z-index: 9999;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.10) 0px,
+        rgba(0, 0, 0, 0.10) 2px,
+        rgba(255, 255, 255, 0) 2px,
+        rgba(255, 255, 255, 0) 4px
+      );
+    }
+
+    /* 
+      ──────────────────────────────────────────────────────────
+      Retro .NET / Windows 95-Style Header
+      ──────────────────────────────────────────────────────────
+    */
     .header {
       position: fixed;   /* Keep header pinned to top */
       top: 0;
@@ -47,7 +74,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 0 10px;
-      z-index: 9999; /* So it stays above the pinball canvas */
+      z-index: 9998; /* Stays under the CRT overlay, but above the game canvas */
     }
 
     .header .window-title {
@@ -79,12 +106,14 @@
       background: linear-gradient(to top, #E0E0E0, #C3C7CB);
     }
 
-    /* ──────────────────────────────────────────────────────────
-       Pinball Container
-       ────────────────────────────────────────────────────────── */
+    /*
+      ──────────────────────────────────────────────────────────
+      Pinball Container
+      ──────────────────────────────────────────────────────────
+    */
     .game-wrapper {
-      /* We shift the main content down so it's not hidden by the header */
-      margin-top: 30px; 
+      /* Shift main content so it's not hidden by the header */
+      margin-top: 30px;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -138,7 +167,6 @@
       align-items: center;
       justify-content: center;
     }
-
     .left-trigger {
       left: 10px;
     }
@@ -152,7 +180,11 @@
       box-shadow: 0 0 20px rgba(255, 255, 255, 0.75);
     }
 
-    /* responsive scaling for taller pinball tables */
+    /* 
+      ──────────────────────────────────────────────────────────
+      Responsive scaling for the game area
+      ──────────────────────────────────────────────────────────
+    */
     @media (min-height: 0px) {
       .container { transform: scale(0.25); }
     }
@@ -183,7 +215,7 @@
     }
   </style>
 </head>
-<body>
+<body class="crt">
 
   <!-- Retro .NET / Windows 95 style header -->
   <div class="header">
@@ -340,7 +372,7 @@
 
         let paddleGroup = Matter.Body.nextGroup(true);
 
-        // Left paddle mechanism
+        // Left paddle
         let paddleLeft = {};
         paddleLeft.paddle = Matter.Bodies.trapezoid(170, 660, 20, 80, 0.33, {
           label: 'paddleLeft',
@@ -374,7 +406,7 @@
         Matter.World.add(world, [paddleLeft.comp, paddleLeft.hinge, paddleLeft.con]);
         Matter.Body.rotate(paddleLeft.comp, 0.57, { x: 142, y: 660 });
 
-        // Right paddle mechanism
+        // Right paddle
         let paddleRight = {};
         paddleRight.paddle = Matter.Bodies.trapezoid(280, 660, 20, 80, 0.33, {
           label: 'paddleRight',
@@ -436,22 +468,25 @@
         });
 
         Matter.Events.on(engine, 'beforeUpdate', function() {
+          // Capping pinball velocity
           Matter.Body.setVelocity(pinball, {
             x: Math.max(Math.min(pinball.velocity.x, MAX_VELOCITY), -MAX_VELOCITY),
             y: Math.max(Math.min(pinball.velocity.y, MAX_VELOCITY), -MAX_VELOCITY)
           });
 
-          // If pinball goes into the launcher lane area
+          // If pinball drifts too far right into the plunger area
           if (pinball.position.x > 450 && pinball.velocity.y > 0) {
             Matter.Body.setVelocity(pinball, { x: 0, y: -10 });
           }
         });
 
+        // Mouse for debugging / testing
         Matter.World.add(world, Matter.MouseConstraint.create(engine, {
           mouse: Matter.Mouse.create(render.canvas),
           constraint: { stiffness: 0.2, render: { visible: false } }
         }));
 
+        // Keyboard events
         $('body').on('keydown', function(e) {
           if (e.which === 37) {
             isLeftPaddleUp = true;
@@ -467,6 +502,7 @@
           }
         });
 
+        // Touch / click triggers
         $('.left-trigger')
           .on('mousedown touchstart', () => { isLeftPaddleUp = true; })
           .on('mouseup touchend', () => { isLeftPaddleUp = false; });
@@ -480,7 +516,7 @@
         Matter.Body.setPosition(pinball, { x: 465, y: 765 });
         Matter.Body.setVelocity(pinball, { x: 0, y: -25 + rand(-2, 2) });
         Matter.Body.setAngularVelocity(pinball, 0);
-        // Play launch sound effect
+        // launch sound
         document.getElementById('launchSound').play();
       }
 
@@ -490,7 +526,7 @@
         setTimeout(() => {
           bumper.render.fillStyle = COLOR.BUMPER;
         }, 100);
-        // Play bumper collision sound effect
+        // bumper collision sound
         document.getElementById('bumperSound').play();
       }
 
@@ -534,13 +570,13 @@
       }
 
       function bumper(x, y) {
-        let bumper = Matter.Bodies.circle(x, y, 25, {
+        let bumperBody = Matter.Bodies.circle(x, y, 25, {
           label: 'bumper',
           isStatic: true,
           render: { fillStyle: COLOR.BUMPER }
         });
-        bumper.restitution = BUMPER_BOUNCE;
-        return bumper;
+        bumperBody.restitution = BUMPER_BOUNCE;
+        return bumperBody;
       }
 
       function stopper(x, y, side, position) {
