@@ -3,7 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <title>Retro Pinball | Classic Arcade Style</title>
+  <!-- Mobile viewport for responsive scaling -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="icon" href="logo.png" type="png">
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
@@ -14,22 +18,56 @@
     html, body {
       height: 100%;
       overflow: hidden;
-    }
-
-    body {
-      display: flex;
-      justify-content: center;
-      align-items: center;
       margin: 0;
-      background-color: #000; /* retro black background */
-      color: #fff;
+      padding: 0;
+      background-color: #000;
       font-family: 'Press Start 2P', monospace;
       text-transform: uppercase;
+      position: relative;
+    }
+
+    /* CRT scanlines overlay */
+    html::after {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0) 0px,
+        rgba(0, 0, 0, 0) 1px,
+        rgba(0, 0, 0, 0.1) 2px,
+        rgba(0, 0, 0, 0) 3px
+      );
+      z-index: 9999;
+    }
+
+    header {
+      position: absolute;
+      top: 0;
+      width: 100%;
+      text-align: center;
+      padding: 10px 0;
+      background-color: #000;
+      color: #fff;
+      z-index: 10;
+    }
+    
+    header h1 {
+      margin: 0;
+      text-shadow: 0 0 5px #0ff, 0 0 10px #0ff;
     }
 
     .container {
       position: relative;
       line-height: 0;
+      margin-top: 60px; /* space for header */
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 0 20px rgba(0,255,255,0.5);
     }
 
     .score {
@@ -56,6 +94,10 @@
       -webkit-appearance: none;
          -moz-appearance: none;
               appearance: none;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
       position: absolute;
       width: 80px;
       height: 80px;
@@ -64,12 +106,15 @@
       border-radius: 50%;
       background-color: #f0f; /* retro magenta */
       color: #fff;
-      text-align: center;
-      line-height: 80px;
       font-size: 1.25rem;
       cursor: pointer;
       outline: none;
-      box-shadow: 0 0 10px #f0f;
+      box-shadow: 0 0 10px #f0f, 0 0 20px #f0f;
+      transition: transform 0.1s ease;
+    }
+
+    .trigger:active {
+      transform: translateY(4px);
     }
 
     .left-trigger {
@@ -80,13 +125,19 @@
       right: 60px;
     }
 
+    /* Icon styling */
+    .trigger i {
+      font-size: 1.5rem;
+      margin-bottom: 5px;
+    }
+
     canvas {
       overflow: hidden;
       border-radius: 5px;
       box-shadow: 0 0 20px rgba(255, 255, 255, 0.75);
     }
 
-    /* responsive scaling, because pinball tables are tall */
+    /* responsive scaling for taller pinball tables */
     @media (min-height: 0px) {
       .container { transform: scale(0.25); }
     }
@@ -99,9 +150,28 @@
     @media (min-height: 800px) {
       .container { transform: scale(1); }
     }
+
+    /* Additional mobile-specific styles for smaller screens */
+    @media (max-width: 600px) {
+      .trigger {
+        width: 100px;
+        height: 100px;
+        font-size: 1.5rem;
+      }
+      .trigger i {
+        font-size: 2rem;
+      }
+      .current-score span,
+      .high-score span {
+        font-size: 4rem;
+      }
+    }
   </style>
 </head>
 <body>
+  <header>
+    <h1>cantinho de .net</h1>
+  </header>
   <div class="container">
     <div class="score current-score">
       score<br><span></span>
@@ -109,18 +179,24 @@
     <div class="score high-score">
       high score<br><span></span>
     </div>
-    <button class="trigger left-trigger">tap!</button>
-    <button class="trigger right-trigger">tap!</button>
+    <button class="trigger left-trigger">
+      <i class="fas fa-arrow-left"></i>
+      tap!
+    </button>
+    <button class="trigger right-trigger">
+      <i class="fas fa-arrow-right"></i>
+      tap!
+    </button>
   </div>
 
   <!-- Audio elements for sound effects -->
   <audio id="bumperSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" preload="auto"></audio>
   <audio id="launchSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
 
-  <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js'></script>
-  <script src='https://cdn.rawgit.com/schteppe/poly-decomp.js/1ef946f1/build/decomp.min.js'></script>
-  <script src='https://cdn.rawgit.com/liabru/matter-js/0895d81f/build/matter.min.js'></script>
-  <script src='https://cdn.rawgit.com/liabru/matter-attractors/c470ed42/build/matter-attractors.min.js'></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="https://cdn.rawgit.com/schteppe/poly-decomp.js/1ef946f1/build/decomp.min.js"></script>
+  <script src="https://cdn.rawgit.com/liabru/matter-js/0895d81f/build/matter.min.js"></script>
+  <script src="https://cdn.rawgit.com/liabru/matter-attractors/c470ed42/build/matter-attractors.min.js"></script>
 
   <script>
     (() => {
